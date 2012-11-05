@@ -46,4 +46,28 @@ class ResultPage
     return out
   end
 
+  def to_hashes
+    out = []
+    rows = @html.css(".ncd-results-table > table tr")
+    rows.each do |row|
+      title = row.at_css("[id*=ScriptLink]")
+      next if title.nil?
+      
+      o = {}
+      o["title"] = title.text.strip.gsub("\u00A0", "")
+      o["date_of_classification"] = row.at_css(".item-date").text.strip.gsub("\u00A0", "")
+      o["category"] = row.at_css(".item-category").text.strip.gsub("\u00A0", "")
+      
+      medium = row.at_css('.media-type')
+      unless medium.nil? 
+        x = /\((.*?)\)/.match(medium.text.strip.gsub("\u00A0", ""))
+        medium = x[1] if x.length > 0
+      end
+
+      o["medium"] = medium unless medium.nil?
+      out.push o
+    end
+    
+    return out
+  end
 end

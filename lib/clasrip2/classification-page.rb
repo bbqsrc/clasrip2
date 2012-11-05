@@ -1,5 +1,5 @@
 require "nokogiri"
-require "Date"
+require "date"
 
 class ClassificationPage
   def initialize(html)

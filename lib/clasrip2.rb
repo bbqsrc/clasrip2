@@ -78,6 +78,41 @@ require "./clasrip2/search-page.rb"
       
     end
   end
+
+  class Verifier
+    @@host = "www.classification.gov.au"
+    @@pass = "\u2713"
+    @@fail = "\u00D7"
+    
+    def run(from=nil, to=nil)
+      connection = Mongo::Connection.new
+      db = connection.db("classification")
+      coll = db.collection("records")
+
+      conn = Clasrip2::Connection.new(@@host)
+      search = SearchPage.new(conn)
+      c = 0
+      page = search.query_date_period(from, to)
+      print "Verification starting at #{from.strftime('%Y-%m-%d')}, ending at #{to.strftime('%Y-%m-%d')}\n"
+      
+      while page != nil
+        classifications = page.to_hashes
+        classifications.each do |cls|
+          c += 1
+          result = coll.find(cls).to_a.length
+          if result == 1
+            print "\r#{@@pass} [#{c}/#{page.total_results}] #{cls['date_of_classification']}: #{cls['title']} (Category: #{cls['category']}) (Media: #{cls['medium']})"
+          elsif result > 1
+            print "#{@@fail} [#{c}/#{page.total_results}] #{cls['date_of_classification']}: #{cls['title']} (Category: #{cls['category']}) (Media: #{cls['medium']}) - DUPE [#{result}]\n"
+          elsif result == 0
+            print "#{@@fail} [#{c}/#{page.total_results}] #{cls['date_of_classification']}: #{cls['title']} (Category: #{cls['category']}) (Media: #{cls['medium']}) - MISSING [#{result}]\n"
+          end
+        end
+        page = page.next_page
+      end
+    end
+  end
+
 end
 
 scr = Clasrip2::Scraper.new
